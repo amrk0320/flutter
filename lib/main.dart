@@ -9,6 +9,9 @@ import 'dart:async';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:simple_permissions/simple_permissions.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:carousel_pro/carousel_pro.dart';
+
 typedef void OnError(Exception exception);
 
 
@@ -31,8 +34,35 @@ class MyApp extends StatelessWidget {
         accentColor: const Color(0xFF2196f3),
         canvasColor: const Color(0xFFfafafa),
       ),
-      home: new MyHomePage(),
-    );
+      // home: new MyHomePage(),
+      home: DefaultTabController(
+      length: 4,
+      child: new Scaffold(
+        body: TabBarView(
+          children: [
+            new MyHomePage(),
+            new Container(color: Colors.orange,),
+          ],
+        ),
+        bottomNavigationBar: new TabBar(
+          tabs: [
+            Tab(
+              icon: new Icon(Icons.home),
+            ),
+            Tab(
+              icon: new Icon(Icons.rss_feed),
+            ),
+          ],
+          labelColor: Colors.yellow,
+          unselectedLabelColor: Colors.blue,
+          indicatorSize: TabBarIndicatorSize.label,
+          indicatorPadding: EdgeInsets.all(5.0),
+          indicatorColor: Colors.red,
+        ),
+        backgroundColor: Colors.black,
+        ),
+      ),
+  );
   }
 }
 
@@ -46,7 +76,7 @@ class MyHomePage extends StatefulWidget {
 enum PlayerState { stopped, playing, paused }
 
 class _FeedState extends State<MyHomePage> {
-
+    static GlobalKey previewContainer = new GlobalKey();
     Duration duration;
     Duration position;
 
@@ -160,24 +190,6 @@ class _FeedState extends State<MyHomePage> {
     String _platformVersion = 'Unknown';
     Permission permission;
 
-    // 画面キャプチャを取得する処理
-    Future<void> writeToFile(ByteData data, String path) {
-      final buffer = data.buffer;
-      return File(path).writeAsBytes(buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-    }
-
-    void capture({@required String path}) async {
-      var builder = ui.SceneBuilder();
-      var scene = RendererBinding.instance.renderView.layer.buildScene(builder);
-      var image = await scene.toImage(ui.window.physicalSize.width.toInt(),
-          ui.window.physicalSize.height.toInt());
-      scene.dispose();
-
-      var data = await image.toByteData(format: ui.ImageByteFormat.png);
-      print("書き込み");
-      await writeToFile(data, path);
-    }
-
     initPlatformState() async {
       String platformVersion;
       // Platform messages may fail, so we use a try/catch PlatformException.
@@ -203,20 +215,40 @@ class _FeedState extends State<MyHomePage> {
       }
     }
 
+    Future<String> takeScreenShot() async{
+      RenderRepaintBoundary boundary = previewContainer.currentContext.findRenderObject();
+      ui.Image image = await boundary.toImage();
+      final directory = (await getApplicationDocumentsDirectory()).path;
+      ByteData byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      print(pngBytes);
+      String filepath = '$directory/screenshot.png';
+      File imgFile = new File(filepath);
+      imgFile.writeAsBytes(pngBytes);
+      return filepath;
+    }
+
     void shareThirdPArty() async {
-
       await checkLibralyPermission();
+      String filepath = await takeScreenShot();
+      _launchURL(filepath);      
+    }
 
-      print("onTap called.");
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-      print(appDocDir);
-      final dir = appDocDir.path; 
-      final String dirPath = '${dir}';
-      await Directory(dirPath).create(recursive: true);
-      String filePath = '$dirPath/test.png';
-      // String filePath = '$dirPath/${timestamp()}.jpg';
+    // String timestamp_format(){
+    //   var now = new DateTime.now();
+    //   var formatter = new DateFormat('yyyy-MM-dd');
+    //   String formatted = formatter.format(now);
+    //   print(formatted); // something like 2013-04-20
+    //   return formatted;
+    // }
 
-      capture(path: filePath);
+    _launchURL(String imageUrl) async {
+      String url = 'instagram://library?LocalIdentifier=$imageUrl';
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw 'Could not launch $url';
+      }
     }
 
     Widget _buildPlayer() => new Container(
@@ -298,116 +330,119 @@ class _FeedState extends State<MyHomePage> {
             children: <Widget>[
               // 再生           
               Expanded(
-                child:Container(
-                decoration: BoxDecoration(color: Colors.black),
-                  child: Column(
-                    children: <Widget>[
-                      // 再生回数バー
-                      Expanded(
-                        child:Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                                children: <Widget>[
-                                  new Icon(IconData(0xe039, fontFamily: 'MaterialIcons'),color: Colors.white),
-                                  Padding(padding: EdgeInsets.all(5.0)),
-                                  Text(
-                                    _play_count.toString() + "回",
-                                    style: new TextStyle(fontSize:14.0,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w200,
-                                    fontFamily: "Roboto"),
-                                  ),
-                                ]
-                              ),
-                            Padding(
-                              padding: EdgeInsets.only(right:1.0),
-                              child:IconButton(
-                                icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
-                                onPressed: () { shareThirdPArty(); },
-                              ),
-                            ),
-                          ]
-                        ),
-                        flex: 1,
-                      ),
-                      // ジャケット写真
-                      Expanded(
-                        child:new Stack(
-                          children: <Widget>[
-                            Container(
-                              decoration: new BoxDecoration(
-                                image: new DecorationImage(
-                                  image: NetworkImage(
-                                    'https://i.scdn.co/image/e63f29b1a8cde872666bb0c3b702280a3bd45ff8'),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            new Align(
-                              alignment: new Alignment(1.0, 1.0),
-                              child:Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.max,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: <Widget>[
-                                  Text(
-                                    "@" + _username,
-                                    style: new TextStyle(fontSize:14.0,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w200,
-                                    fontFamily: "Roboto"),
-                                  ),
-                                  Padding(padding: EdgeInsets.all(5.0)),
-                                  Text(
-                                    _post_created_date,
-                                    style: new TextStyle(fontSize:14.0,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w200,
-                                    fontFamily: "Roboto"),
-                                  ),
-                                ]
-                              ),
-                            ),                          
-                          ],
-                        ),
-                        flex: 8,
-                      ),
-                      Expanded(
-                        child:Container(
+                child:RepaintBoundary(
+                  key: previewContainer,
+                  child:Container(
+                  decoration: BoxDecoration(color: Colors.black),
+                    child: Column(
+                      children: <Widget>[
+                        // 再生回数バー
+                        Expanded(
                           child:Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             mainAxisSize: MainAxisSize.max,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
-                              Text(
-                                _comment,
-                                style: new TextStyle(fontSize:14.0,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: "Roboto"),
-                              ),
-                              Padding(padding: EdgeInsets.all(5.0)),
-                              new Icon(IconData(0xe87d,fontFamily: 'MaterialIcons'),color: Colors.red[800]),
-                              Padding(padding: EdgeInsets.all(2.0)),
-                              Text(
-                                "いいね " + _like_count.toString() + "件",
-                                style: new TextStyle(fontSize:12.0,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w200,
-                                fontFamily: "Roboto"),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.max,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: <Widget>[
+                                    new Icon(IconData(0xe039, fontFamily: 'MaterialIcons'),color: Colors.white),
+                                    Padding(padding: EdgeInsets.all(5.0)),
+                                    Text(
+                                      _play_count.toString() + "回",
+                                      style: new TextStyle(fontSize:14.0,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w200,
+                                      fontFamily: "Roboto"),
+                                    ),
+                                  ]
+                                ),
+                              Padding(
+                                padding: EdgeInsets.only(right:1.0),
+                                child:IconButton(
+                                  icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
+                                  onPressed: () { shareThirdPArty(); },
+                                ),
                               ),
                             ]
                           ),
+                          flex: 1,
                         ),
-                        flex: 1,
-                      ),
-                    ],
+                        // ジャケット写真
+                        Expanded(
+                          child:new Stack(
+                            children: <Widget>[
+                              Container(
+                                decoration: new BoxDecoration(
+                                  image: new DecorationImage(
+                                    image: NetworkImage(
+                                      'https://i.scdn.co/image/e63f29b1a8cde872666bb0c3b702280a3bd45ff8'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              new Align(
+                                alignment: new Alignment(1.0, 1.0),
+                                child:Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.max,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: <Widget>[
+                                    Text(
+                                      "@" + _username,
+                                      style: new TextStyle(fontSize:14.0,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w200,
+                                      fontFamily: "Roboto"),
+                                    ),
+                                    Padding(padding: EdgeInsets.all(5.0)),
+                                    Text(
+                                      _post_created_date,
+                                      style: new TextStyle(fontSize:14.0,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w200,
+                                      fontFamily: "Roboto"),
+                                    ),
+                                  ]
+                                ),
+                              ),                          
+                            ],
+                          ),
+                          flex: 8,
+                        ),
+                        Expanded(
+                          child:Container(
+                            child:Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.max,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                Text(
+                                  _comment,
+                                  style: new TextStyle(fontSize:14.0,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: "Roboto"),
+                                ),
+                                Padding(padding: EdgeInsets.all(5.0)),
+                                new Icon(IconData(0xe87d,fontFamily: 'MaterialIcons'),color: Colors.red[800]),
+                                Padding(padding: EdgeInsets.all(2.0)),
+                                Text(
+                                  "いいね " + _like_count.toString() + "件",
+                                  style: new TextStyle(fontSize:12.0,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w200,
+                                  fontFamily: "Roboto"),
+                                ),
+                              ]
+                            ),
+                          ),
+                          flex: 1,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),    

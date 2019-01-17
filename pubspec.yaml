@@ -15,6 +15,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  audioplayer:
+  path_provider:
+  http:
+  image_picker: ^0.4.10
+  simple_permissions: ^0.1.9
+  url_launcher: ^4.0.3
+  carousel_pro: ^0.0.13
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
