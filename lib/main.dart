@@ -11,12 +11,9 @@ import 'package:flutter/services.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:carousel_pro/carousel_pro.dart';
+import './custom_app_bar.dart';
 
 typedef void OnError(Exception exception);
-
-
-const kUrl = "https://p.scdn.co/mp3-preview/3eb16018c2a700240e9dfb8817b6f2d041f15eb1?cid=774b29d4f13844c495f206cafdad9c86";
-const kUrl2 = "https://p.scdn.co/mp3-preview/3eb16018c2a700240e9dfb8817b6f2d041f15eb1?cid=774b29d4f13844c495f206cafdad9c86";
 
 void main() {
   runApp(new MyApp());
@@ -30,7 +27,7 @@ class MyApp extends StatelessWidget {
       title: 'Generated App',
       theme: new ThemeData(
         primarySwatch: Colors.blue,
-        primaryColor: const Color(0xFF2196f3),
+        primaryColor: const Color(0xFF000000),
         accentColor: const Color(0xFF2196f3),
         canvasColor: const Color(0xFFfafafa),
       ),
@@ -44,6 +41,7 @@ class MyApp extends StatelessWidget {
             new Container(color: Colors.orange,),
           ],
         ),
+        resizeToAvoidBottomPadding: false,
         bottomNavigationBar: new TabBar(
           tabs: [
             Tab(
@@ -78,30 +76,15 @@ enum PlayerState { stopped, playing, paused }
 class _FeedState extends State<MyHomePage> {
     static GlobalKey previewContainer = new GlobalKey();
     Duration duration;
+    Duration minus_duration;
     Duration position;
-
     AudioPlayer audioPlayer;
-
-    String localFilePath;
-
-    PlayerState playerState = PlayerState.stopped;
-
-    get isPlaying => playerState == PlayerState.playing;
-    get isPaused => playerState == PlayerState.paused;
-
-    get durationText =>
-        duration != null ? duration.toString().split('.').first : '';
-    get positionText =>
-        position != null ? position.toString().split('.').first : '';
-
-    bool isMuted = false;
-
     StreamSubscription _positionSubscription;
     StreamSubscription _audioPlayerStateSubscription;
 
-
     void initAudioPlayer() {
       audioPlayer = new AudioPlayer();
+      init_play_list();
       _positionSubscription = audioPlayer.onAudioPositionChanged
           .listen((p) => setState(() => position = p));
       _audioPlayerStateSubscription =
@@ -124,7 +107,7 @@ class _FeedState extends State<MyHomePage> {
     }
 
     Future play() async {
-      await audioPlayer.play(kUrl);
+      await audioPlayer.play(playlist[_play_index]['preview_url']);
       setState(() {
         playerState = PlayerState.playing;
       });
@@ -155,8 +138,44 @@ class _FeedState extends State<MyHomePage> {
       });
     }
 
+    void init_play_list() {
+      _play_index = 0;
+      update_play_list();
+    }
+
+    void update_play_list() {
+      var songs = {
+        'preview_url' : 'https://p.scdn.co/mp3-preview/3eb16018c2a700240e9dfb8817b6f2d041f15eb1?cid=774b29d4f13844c495f206cafdad9c86',
+        'title' : 'tofubeats - all I wanna do'
+      };
+      var songs2 = {
+        'preview_url' : 'https://p.scdn.co/mp3-preview/3eb16018c2a700240e9dfb8817b6f2d041f15eb1?cid=774b29d4f13844c495f206cafdad9c86',
+        'title' : 'tofubeats - 水星'
+      };
+      var songs3 = {
+        'preview_url' : 'https://p.scdn.co/mp3-preview/3eb16018c2a700240e9dfb8817b6f2d041f15eb1?cid=774b29d4f13844c495f206cafdad9c86',
+        'title' : 'tofubeats - RUN'
+      };
+      playlist.add(songs);
+      playlist.add(songs2);
+      playlist.add(songs3);
+
+      String hashtag = '#中目黒';
+      String hashtag2 = '#チル';
+      String hashtag3 = '#午後二時';
+      String hashtag4 = '#ゆっくり休日';
+      hashtags.add(hashtag);
+      hashtags.add(hashtag2);
+      hashtags.add(hashtag3);
+      hashtags.add(hashtag4);
+    }
+
     void onComplete() {
-      setState(() => playerState = PlayerState.stopped);
+      // 次の曲を再生する
+      if(playlist.length != _play_index+1){
+        _play_index++;
+        play();
+      }
     }
 
     int _play_count;
@@ -165,6 +184,21 @@ class _FeedState extends State<MyHomePage> {
     String _comment;
     String _username;
     String _post_created_date;
+    String _playlist_title;
+    String localFilePath;
+    PlayerState playerState = PlayerState.stopped;
+    get isPlaying => playerState == PlayerState.playing;
+    get isPaused => playerState == PlayerState.paused;
+    get durationText =>
+        duration != null ? duration.toString().split('.').first : '';
+    get positionText =>
+        position != null ? position.toString().split('.').first : '';
+    get minus_durationText =>
+        position != null ? (duration - position).toString().split('.').first : '';
+    bool isMuted = false;
+    var playlist = new List();
+    var hashtags = new List();
+    int _play_index = 0;
 
     @override
     void initState() {
@@ -175,6 +209,7 @@ class _FeedState extends State<MyHomePage> {
       _comment = 'めっちゃ洋楽!!';
       _username = 'isseimunetomo ';
       _post_created_date = '2日前';
+      _playlist_title = 'イギリスロックまとめ';
       initAudioPlayer();
       initPlatformState();
     }
@@ -231,16 +266,8 @@ class _FeedState extends State<MyHomePage> {
     void shareThirdPArty() async {
       await checkLibralyPermission();
       String filepath = await takeScreenShot();
-      _launchURL(filepath);      
+      _launchURL(filepath);
     }
-
-    // String timestamp_format(){
-    //   var now = new DateTime.now();
-    //   var formatter = new DateFormat('yyyy-MM-dd');
-    //   String formatted = formatter.format(now);
-    //   print(formatted); // something like 2013-04-20
-    //   return formatted;
-    // }
 
     _launchURL(String imageUrl) async {
       String url = 'instagram://library?LocalIdentifier=$imageUrl';
@@ -252,75 +279,83 @@ class _FeedState extends State<MyHomePage> {
     }
 
     Widget _buildPlayer() => new Container(
-          padding: new EdgeInsets.all(16.0),
           child: new Column(mainAxisSize: MainAxisSize.min, children: [
             new Row(mainAxisSize: MainAxisSize.min, children: [
               new IconButton(
-                  onPressed: isPlaying ? null : () => play(),
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.play_arrow),
-                  color: Colors.cyan),
+                  onPressed: isPlaying || isPaused ? () => stop() : null,
+                  iconSize: 60.0,
+                  icon: new Icon(IconData(0xe045, fontFamily: 'MaterialIcons')),
+                  color: Colors.black),
               new IconButton(
-                  onPressed: isPlaying ? () => pause() : null,
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.pause),
-                  color: Colors.cyan),
+                  onPressed: isPlaying ? () =>pause() : () => play(),
+                  iconSize: 60.0,
+                  icon: isPlaying ? new Icon(IconData(0xe035, fontFamily: 'MaterialIcons')): new Icon(IconData(0xe038, fontFamily: 'MaterialIcons')),
+                  color: Colors.black),
               new IconButton(
                   onPressed: isPlaying || isPaused ? () => stop() : null,
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.stop),
-                  color: Colors.cyan),
+                  iconSize: 60.0,
+                  icon: new Icon(IconData(0xe044, fontFamily: 'MaterialIcons')),
+                  color: Colors.black),
             ]),
-            duration == null
-                ? new Container()
-                : new Slider(
-                    value: position?.inMilliseconds?.toDouble() ?? 0.0,
-                    onChanged: (double value) =>
-                        audioPlayer.seek((value / 1000).roundToDouble()),
-                    min: 0.0,
-                    max: duration.inMilliseconds.toDouble()),
-            new Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                new IconButton(
-                    onPressed: () => mute(true),
-                    icon: new Icon(Icons.headset_off),
-                    color: Colors.cyan),
-                new IconButton(
-                    onPressed: () => mute(false),
-                    icon: new Icon(Icons.headset),
-                    color: Colors.cyan),
-              ],
-            ),
-            new Row(mainAxisSize: MainAxisSize.min, children: [
-              new Padding(
-                  padding: new EdgeInsets.all(12.0),
-                  child: new Stack(children: [
-                    new CircularProgressIndicator(
-                        value: 1.0,
-                        valueColor: new AlwaysStoppedAnimation(Colors.grey[300])),
-                    new CircularProgressIndicator(
-                      value: position != null && position.inMilliseconds > 0
-                          ? (position?.inMilliseconds?.toDouble() ?? 0.0) /
-                              (duration?.inMilliseconds?.toDouble() ?? 0.0)
-                          : 0.0,
-                      valueColor: new AlwaysStoppedAnimation(Colors.cyan),
-                      backgroundColor: Colors.yellow,
-                    ),
-                  ])),
-              new Text(
+          Padding(
+            padding: EdgeInsets.only(left:0.0),
+            child:
+              new Row(mainAxisSize: MainAxisSize.min, children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child:
+                  new Text(
                   position != null
-                      ? "${positionText ?? ''} / ${durationText ?? ''}"
+                      ? "${positionText ?? ''}"
                       : duration != null ? durationText : '',
-                  style: new TextStyle(fontSize: 24.0))
-            ])
+                  style: new TextStyle(fontSize: 12.0))
+                ),
+                duration == null
+                    ? new Container()
+                    : new Slider(
+                        value: position?.inMilliseconds?.toDouble() ?? 0.0,
+                        onChanged: (double value) =>
+                            audioPlayer.seek((value / 1000).roundToDouble()),
+                        min: 0.0,
+                        max: duration.inMilliseconds.toDouble()),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child:
+                  new Text(
+                  position != null
+                      ? "${durationText ?? ''}"
+                      : duration != null ? durationText : '',
+                  style: new TextStyle(fontSize: 12.0))
+                ),
+              ])
+            ),
           ]));
+
+    List<Widget> createPLayListText() {
+      List<Widget> childrenTexts = List<Widget>();
+      for (int i = 0; i < playlist.length; i++) {
+        childrenTexts.add(new Align(
+          alignment: Alignment.centerLeft,
+          child:
+          Padding(
+            padding: EdgeInsets.only(left:10.0),
+            child:
+            Text(playlist[i]['title'],
+            style: TextStyle(fontSize: 20.0,color: Colors.red,
+            fontWeight: FontWeight.w600,
+            fontFamily: "Roboto"),
+            textAlign: TextAlign.left),
+          ),
+        ));
+      }
+      return childrenTexts;
+    }
 
     @override
     Widget build(BuildContext context) {
       return new Scaffold(
         appBar: new AppBar(
-          title: new Text('App Name'),
+          title: new Text('Dig'),
           ),
         body:
           new Column(
@@ -338,15 +373,14 @@ class _FeedState extends State<MyHomePage> {
                       children: <Widget>[
                         // 再生回数バー
                         Expanded(
-                          child:Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.max,
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          child:Stack(
                             children: <Widget>[
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.max,
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child:Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.max,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: <Widget>[
                                     new Icon(IconData(0xe039, fontFamily: 'MaterialIcons'),color: Colors.white),
                                     Padding(padding: EdgeInsets.all(5.0)),
@@ -359,56 +393,95 @@ class _FeedState extends State<MyHomePage> {
                                     ),
                                   ]
                                 ),
-                              Padding(
-                                padding: EdgeInsets.only(right:1.0),
-                                child:IconButton(
-                                  icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
-                                  onPressed: () { shareThirdPArty(); },
+                              ),
+                              Align(
+                                alignment: Alignment.center,
+                                child:Text(
+                                  _playlist_title,
+                                  textAlign: TextAlign.center,
+                                  style: new TextStyle(fontSize:18.0,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: "Roboto"),
                                 ),
                               ),
+                              // インスタ投稿用アイコン
+                              // Padding(
+                              //   padding: EdgeInsets.only(right:1.0),
+                              //   child:IconButton(
+                              //     icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
+                              //     onPressed: () { shareThirdPArty(); },
+                              //   ),
+                              // ),
                             ]
                           ),
                           flex: 1,
                         ),
                         // ジャケット写真
                         Expanded(
-                          child:new Stack(
-                            children: <Widget>[
-                              Container(
-                                decoration: new BoxDecoration(
-                                  image: new DecorationImage(
-                                    image: NetworkImage(
-                                      'https://i.scdn.co/image/e63f29b1a8cde872666bb0c3b702280a3bd45ff8'),
-                                    fit: BoxFit.cover,
+                          child:Container(
+                            decoration: BoxDecoration(color: Colors.white),
+                            child:Stack(
+                              children: <Widget>[
+                                Align(
+                                  alignment: Alignment.center,
+                                  child:Card(
+                                    margin: EdgeInsets.only(top:30.0,bottom:30.0,right:80.0,left:80.0),
+                                  // sportifyの画像によって変更する
+                                  // child:SizedBox(
+                                  //   width:240.0,
+                                  //   height:240.0,
+                                    child:new Stack(
+                                      children: <Widget>[
+                                        Container(
+                                          decoration: new BoxDecoration(
+                                            image: new DecorationImage(
+                                              image: NetworkImage(
+                                                'https://is5-ssl.mzstatic.com/image/thumb/Music4/v4/a1/5c/8d/a15c8df1-e964-997b-63eb-c4f9d2d8c280/825646212682.jpg/1200x630bb.jpg'),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                        ),
+                                        new Align(
+                                          alignment: new Alignment(1.0, 1.0),
+                                          child:Row(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.max,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: <Widget>[
+                                              Text(
+                                                "@" + _username,
+                                                style: new TextStyle(fontSize:14.0,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w200,
+                                                fontFamily: "Roboto"),
+                                              ),
+                                              Padding(padding: EdgeInsets.all(5.0)),
+                                              Text(
+                                                _post_created_date,
+                                                style: new TextStyle(fontSize:14.0,
+                                                color: Colors.grey,
+                                                fontWeight: FontWeight.w200,
+                                                fontFamily: "Roboto"),
+                                              ),
+                                            ]
+                                          ),
+                                        ),                          
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              new Align(
-                                alignment: new Alignment(1.0, 1.0),
-                                child:Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.max,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: <Widget>[
-                                    Text(
-                                      "@" + _username,
-                                      style: new TextStyle(fontSize:14.0,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w200,
-                                      fontFamily: "Roboto"),
-                                    ),
-                                    Padding(padding: EdgeInsets.all(5.0)),
-                                    Text(
-                                      _post_created_date,
-                                      style: new TextStyle(fontSize:14.0,
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w200,
-                                      fontFamily: "Roboto"),
-                                    ),
-                                  ]
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.max,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: createPLayListText(),
+                                  ),
                                 ),
-                              ),                          
-                            ],
+                              ],
+                            ),
                           ),
                           flex: 8,
                         ),
@@ -445,27 +518,111 @@ class _FeedState extends State<MyHomePage> {
                     ),
                   ),
                 ),
-              ),    
-              // 曲情報           
+              ),
+              // 曲情報
               Expanded(
                 child:Container(
-                  color:Colors.red,
-                  child:
-                    Center(
-                         child: new Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  color:Colors.white,
+                  child:Padding(
+                    padding: new EdgeInsets.only(left:8.0,top:8.0,right:8.0,),
+                    child: new Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                            child: new Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              new Material(child: _buildPlayer()),
-                              localFilePath != null
-                                  ? new Text(localFilePath)
-                                  : new Container(),
-                            ]),
-                    ),
-                  padding: const EdgeInsets.all(0.0),
-                  alignment: Alignment.center,
+                              Container(
+                                height: 20.0,
+                                child: new ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children: new List.generate(hashtags.length, (int index) {
+                                    return new 
+                                      Text(hashtags[index],
+                                        style: TextStyle(fontSize: 12.0,color: Colors.red,
+                                        fontWeight: FontWeight.w200,
+                                        fontFamily: "Roboto"),
+                                        textAlign: TextAlign.left
+                                      );
+                                  }),
+                                ),
+                              ),
+                              Padding(padding: EdgeInsets.all(10.0)),
+                              Text(playlist[_play_index]['title'],
+                                style: TextStyle(fontSize: 25.0,color: Colors.black,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: "Roboto"),
+                                textAlign: TextAlign.left
+                              ),
+                              Padding(padding: EdgeInsets.all(10.0)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: <Widget>[ 
+                                  IconButton(
+                                    icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons')),
+                                    onPressed: () { shareThirdPArty(); },
+                                  ),
+                                  Text(
+                                    "シェア",
+                                    style: new TextStyle(fontSize:14.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w200,
+                                    fontFamily: "Roboto"),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(IconData(0xe838, fontFamily: 'MaterialIcons')),
+                                    onPressed: () { shareThirdPArty(); },
+                                  ),
+                                  Text(
+                                    "お気に入り",
+                                    style: new TextStyle(fontSize:14.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w200,
+                                    fontFamily: "Roboto"),
+                                  ),
+                                ]
+                              ),
+                            ]
+                          ),
+                        ),
+                        new Divider(
+                            color: Colors.black
+                        ),
+                        Center(
+                          child: new Container(
+                            child: _buildPlayer(),
+                            ),
+                        ),
+                        new Divider(
+                            color: Colors.black
+                        ),
+                        CustomScrollView(
+                          shrinkWrap: true,
+                          slivers: <Widget>[
+                            SliverPadding(
+                              padding: const EdgeInsets.all(20.0),
+                              sliver: SliverList(
+                                delegate: SliverChildListDelegate(
+                                  <Widget>[
+                                    const Text('I\'m dedicating every day to you'),
+                                    const Text('Domestic life was never quite my style'),
+                                    const Text('When you smile, you knock me out, I fall apart'),
+                                    const Text('And I thought I was so smart'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ]
+                    )
+                  )
                 ),
-              ),    
+              ),
             ]
           ),
       );
