@@ -178,13 +178,13 @@ class _FeedState extends State<MyHomePage> {
       }
     }
 
-    int _play_count;
-    int _play_second;
-    int _like_count;
-    String _comment;
-    String _username;
-    String _post_created_date;
-    String _playlist_title;
+    int play_count;
+    int play_second;
+    int like_count;
+    String comment;
+    String username;
+    String post_created_date;
+    String playlist_title;
     String localFilePath;
     PlayerState playerState = PlayerState.stopped;
     get isPlaying => playerState == PlayerState.playing;
@@ -203,13 +203,13 @@ class _FeedState extends State<MyHomePage> {
     @override
     void initState() {
       super.initState();
-      _play_second = 30;
-      _play_count = 200;
-      _like_count = 30;
-      _comment = 'めっちゃ洋楽!!';
-      _username = 'isseimunetomo ';
-      _post_created_date = '2日前';
-      _playlist_title = 'イギリスロックまとめ';
+      play_second = 30;
+      play_count = 200;
+      like_count = 30;
+      comment = 'めっちゃ洋楽!!';
+      username = 'isseimunetomo ';
+      post_created_date = '2日前';
+      playlist_title = 'イギリスロックまとめ';
       initAudioPlayer();
       initPlatformState();
     }
@@ -331,198 +331,107 @@ class _FeedState extends State<MyHomePage> {
             ),
           ]));
 
-    List<Widget> createPLayListText() {
-      List<Widget> childrenTexts = List<Widget>();
-      for (int i = 0; i < playlist.length; i++) {
-        childrenTexts.add(new Align(
-          alignment: Alignment.centerLeft,
-          child:
-          Padding(
-            padding: EdgeInsets.only(left:10.0),
-            child:
-            Text(playlist[i]['title'],
-            style: TextStyle(fontSize: 20.0,color: Colors.red,
-            fontWeight: FontWeight.w600,
-            fontFamily: "Roboto"),
-            textAlign: TextAlign.left),
-          ),
-        ));
-      }
-      return childrenTexts;
-    }
-
     @override
     Widget build(BuildContext context) {
       return new Scaffold(
-        appBar: new AppBar(
-          title: new Text('Dig'),
-          ),
-        body:
-          new Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              // 再生           
-              Expanded(
-                child:RepaintBoundary(
-                  key: previewContainer,
-                  child:Container(
+            body: new CustomScrollView(slivers: <Widget>[
+          new SliverAppBar(
+            pinned: true,
+            expandedHeight: _kFlexibleSpaceMaxHeight,
+            flexibleSpace: new FlexibleSpaceBar(
+              title: new Text('Top Lakes'),
+              background:
+                  new MusicThubnail(
+                    animation: kAlwaysDismissedAnimation,
+                    play_count: play_count,
+                    play_second: play_second,
+                    like_count: like_count,
+                    post_created_date:post_created_date,
+                    playlist_title:playlist_title,
+                    playlist :playlist,
+                  ),        
+              ),
+          ),          new SliverList(
+              delegate: new SliverChildListDelegate(<Widget>[
+                Container(
                   decoration: BoxDecoration(color: Colors.black),
-                    child: Column(
+                  child:Container(height: 50.0,
+                    child:Stack(
                       children: <Widget>[
-                        // 再生回数バー
-                        Expanded(
-                          child:Stack(
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child:Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.max,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child:Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.max,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: <Widget>[
-                                    new Icon(IconData(0xe039, fontFamily: 'MaterialIcons'),color: Colors.white),
-                                    Padding(padding: EdgeInsets.all(5.0)),
-                                    Text(
-                                      _play_count.toString() + "回",
-                                      style: new TextStyle(fontSize:14.0,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w200,
-                                      fontFamily: "Roboto"),
-                                    ),
-                                  ]
-                                ),
+                              new Icon(IconData(0xe039, fontFamily: 'MaterialIcons'),color: Colors.white),
+                              Padding(padding: EdgeInsets.all(5.0)),
+                              Text(
+                                this.play_count.toString() + "回",
+                                style: new TextStyle(fontSize:14.0,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w200,
+                                fontFamily: "Roboto"),
                               ),
-                              Align(
-                                alignment: Alignment.center,
-                                child:Text(
-                                  _playlist_title,
-                                  textAlign: TextAlign.center,
-                                  style: new TextStyle(fontSize:18.0,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: "Roboto"),
-                                ),
-                              ),
-                              // インスタ投稿用アイコン
-                              // Padding(
-                              //   padding: EdgeInsets.only(right:1.0),
-                              //   child:IconButton(
-                              //     icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
-                              //     onPressed: () { shareThirdPArty(); },
-                              //   ),
-                              // ),
                             ]
                           ),
-                          flex: 1,
                         ),
-                        // ジャケット写真
-                        Expanded(
-                          child:Container(
-                            decoration: BoxDecoration(color: Colors.white),
-                            child:Stack(
-                              children: <Widget>[
-                                Align(
-                                  alignment: Alignment.center,
-                                  child:Card(
-                                    margin: EdgeInsets.only(top:30.0,bottom:30.0,right:80.0,left:80.0),
-                                  // sportifyの画像によって変更する
-                                  // child:SizedBox(
-                                  //   width:240.0,
-                                  //   height:240.0,
-                                    child:new Stack(
-                                      children: <Widget>[
-                                        Container(
-                                          decoration: new BoxDecoration(
-                                            image: new DecorationImage(
-                                              image: NetworkImage(
-                                                'https://is5-ssl.mzstatic.com/image/thumb/Music4/v4/a1/5c/8d/a15c8df1-e964-997b-63eb-c4f9d2d8c280/825646212682.jpg/1200x630bb.jpg'),
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                        ),
-                                        new Align(
-                                          alignment: new Alignment(1.0, 1.0),
-                                          child:Row(
-                                            mainAxisAlignment: MainAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.max,
-                                            crossAxisAlignment: CrossAxisAlignment.center,
-                                            children: <Widget>[
-                                              Text(
-                                                "@" + _username,
-                                                style: new TextStyle(fontSize:14.0,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w200,
-                                                fontFamily: "Roboto"),
-                                              ),
-                                              Padding(padding: EdgeInsets.all(5.0)),
-                                              Text(
-                                                _post_created_date,
-                                                style: new TextStyle(fontSize:14.0,
-                                                color: Colors.grey,
-                                                fontWeight: FontWeight.w200,
-                                                fontFamily: "Roboto"),
-                                              ),
-                                            ]
-                                          ),
-                                        ),                          
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.max,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: createPLayListText(),
-                                  ),
-                                ),
-                              ],
-                            ),
+                        Align(
+                          alignment: Alignment.center,
+                          child:Text(
+                            this.playlist_title,
+                            textAlign: TextAlign.center,
+                            style: new TextStyle(fontSize:18.0,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: "Roboto"),
                           ),
-                          flex: 8,
                         ),
-                        Expanded(
-                          child:Container(
-                            child:Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                Text(
-                                  _comment,
-                                  style: new TextStyle(fontSize:14.0,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: "Roboto"),
-                                ),
-                                Padding(padding: EdgeInsets.all(5.0)),
-                                new Icon(IconData(0xe87d,fontFamily: 'MaterialIcons'),color: Colors.red[800]),
-                                Padding(padding: EdgeInsets.all(2.0)),
-                                Text(
-                                  "いいね " + _like_count.toString() + "件",
-                                  style: new TextStyle(fontSize:12.0,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w200,
-                                  fontFamily: "Roboto"),
-                                ),
-                              ]
-                            ),
-                          ),
-                          flex: 1,
-                        ),
-                      ],
+                        // インスタ投稿用アイコン
+                        // Padding(
+                        //   padding: EdgeInsets.only(right:1.0),
+                        //   child:IconButton(
+                        //     icon: Icon(IconData(0xe0e2, fontFamily: 'MaterialIcons'),color: Colors.white),
+                        //     onPressed: () { shareThirdPArty(); },
+                        //   ),
+                        // ),
+                      ]
                     ),
                   ),
-                ),
-              ),
-              // 曲情報
-              Expanded(
-                child:Container(
-                  color:Colors.white,
+            ),
+            Container(
+              decoration: BoxDecoration(color: Colors.black),
+              child:Container(height: 50.0,
+                      child:Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            this.comment,
+                            style: new TextStyle(fontSize:14.0,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: "Roboto"),
+                          ),
+                          Padding(padding: EdgeInsets.all(5.0)),
+                          new Icon(IconData(0xe87d,fontFamily: 'MaterialIcons'),color: Colors.red[800]),
+                          Padding(padding: EdgeInsets.all(2.0)),
+                          Text(
+                            "いいね " + this.like_count.toString() + "件",
+                            style: new TextStyle(fontSize:12.0,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w200,
+                            fontFamily: "Roboto"),
+                          ),
+                        ]
+                      ),
+                    ),
+            ),
+            Container(
+            decoration: BoxDecoration(color: Colors.white),
+                  child:Container(height: 150.0,
                   child:Padding(
                     padding: new EdgeInsets.only(left:8.0,top:8.0,right:8.0,),
                     child: new Column(
@@ -589,42 +498,143 @@ class _FeedState extends State<MyHomePage> {
                             ]
                           ),
                         ),
-                        new Divider(
-                            color: Colors.black
-                        ),
-                        Center(
-                          child: new Container(
-                            child: _buildPlayer(),
-                            ),
-                        ),
-                        new Divider(
-                            color: Colors.black
-                        ),
-                        CustomScrollView(
-                          shrinkWrap: true,
-                          slivers: <Widget>[
-                            SliverPadding(
-                              padding: const EdgeInsets.all(20.0),
-                              sliver: SliverList(
-                                delegate: SliverChildListDelegate(
-                                  <Widget>[
-                                    const Text('I\'m dedicating every day to you'),
-                                    const Text('Domestic life was never quite my style'),
-                                    const Text('When you smile, you knock me out, I fall apart'),
-                                    const Text('And I thought I was so smart'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ]
-                    )
-                  )
+                    ),
+                  ),
                 ),
-              ),
-            ]
-          ),
-      );
+            ),
+            new Divider(
+                    color: Colors.black
+            ),
+            Container(
+            decoration: BoxDecoration(color: Colors.white),
+                  child:Container(height: 120.0,
+                  child:Center(
+                  child: new Container(
+                    child: _buildPlayer(),
+                    ),
+                ),
+            )),
+            new Divider(
+                    color: Colors.black
+            ),
+            Container(
+            decoration: BoxDecoration(color: Colors.white),
+                  child:Container(height: 200.0,
+                    child:CustomScrollView(
+                    shrinkWrap: true,
+                    slivers: <Widget>[
+                      SliverPadding(
+                        padding: const EdgeInsets.all(20.0),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate(
+                            <Widget>[
+                              const Text('I\'m dedicating every day to you'),
+                              const Text('Domestic life was never quite my style'),
+                              const Text('When you smile, you knock me out, I fall apart'),
+                              const Text('And I thought I was so smart'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+            )),
+          ])),
+        ]));
     }
+}
+
+const double _kFlexibleSpaceMaxHeight = 170.0;
+
+class _BackgroundLayer {
+  _BackgroundLayer({int level, double parallax})
+      : assetName = '',
+        parallaxTween = new Tween<double>(begin: 0.0, end: parallax);
+  final String assetName;
+  final Tween<double> parallaxTween;
+}
+
+final List<_BackgroundLayer> _kBackgroundLayers = <_BackgroundLayer>[
+  new _BackgroundLayer(level: 0, parallax: _kFlexibleSpaceMaxHeight),
+  new _BackgroundLayer(level: 1, parallax: _kFlexibleSpaceMaxHeight),
+  new _BackgroundLayer(level: 2, parallax: _kFlexibleSpaceMaxHeight / 2.0),
+  new _BackgroundLayer(level: 3, parallax: _kFlexibleSpaceMaxHeight / 4.0),
+  new _BackgroundLayer(level: 4, parallax: _kFlexibleSpaceMaxHeight / 2.0),
+  new _BackgroundLayer(level: 5, parallax: _kFlexibleSpaceMaxHeight)
+];
+
+class MusicThubnail extends StatefulWidget {
+  final Animation<double> animation;
+  int play_count;
+  int play_second;
+  int like_count;
+  String post_created_date;
+  String playlist_title;
+  String comment;
+  String username;
+  List playlist;
+  String localFilePath;
+
+  MusicThubnail({Key key, 
+    this.animation,
+    this.play_count,
+    this.play_second,
+    this.like_count,
+    this.post_created_date,
+    this.playlist_title,
+    this.playlist,
+  }) : super(key: key);
+
+  @override
+  _MusicThubnailState createState() => new _MusicThubnailState();
+}
+
+class _MusicThubnailState extends State<MusicThubnail> {
+
+  List<Widget> createPLayListText() {
+    List<Widget> childrenTexts = List<Widget>();
+    for (int i = 0; i < widget.playlist.length; i++) {
+      childrenTexts.add(new Align(
+        alignment: Alignment.centerLeft,
+        child:
+        Padding(
+          padding: EdgeInsets.only(left:10.0),
+          child:
+          Text(widget.playlist[i]['title'],
+          style: TextStyle(fontSize: 20.0,color: Colors.red,
+          fontWeight: FontWeight.w600,
+          fontFamily: "Roboto"),
+          textAlign: TextAlign.left),
+        ),
+      ));
+    }
+    return childrenTexts;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return new AnimatedBuilder(
+        animation: widget.animation,
+        builder: (BuildContext context, Widget child) {
+          return new Stack(
+              children: _kBackgroundLayers.map((_BackgroundLayer layer) {
+            return new Positioned(
+                top: -layer.parallaxTween.evaluate(widget.animation),
+                left: 0.0,
+                right: 0.0,
+                bottom: 0.0,
+                  child: new Container(
+                    decoration: new BoxDecoration(
+                      image: new DecorationImage(
+                        image: NetworkImage(
+                          'https://is5-ssl.mzstatic.com/image/thumb/Music4/v4/a1/5c/8d/a15c8df1-e964-997b-63eb-c4f9d2d8c280/825646212682.jpg/1200x630bb.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                ),
+            );
+          }).toList());
+        });
+  }
 }
